@@ -1,0 +1,8 @@
+services:
+  simulador:
+    build: .
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./src:/app/src:ro
+      - ./examples:/app/examples:ro

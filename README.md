@@ -3,7 +3,53 @@
 Proyecto en JavaScript para cargar la especificación de una máquina de Turing,
 validar una cadena de entrada y simular su ejecución paso a paso.
 
-## Requisitos
+## Uso con Docker (recomendado)
+
+Solo necesitas Docker con Docker Compose. En Windows puedes utilizar Docker
+Desktop, iniciado y configurado para contenedores Linux. No necesitas instalar
+Node.js ni npm en tu computadora.
+
+Desde la carpeta raíz del proyecto, construye la imagen la primera vez:
+
+```bash
+docker compose build
+```
+
+Ejecuta el simulador con:
+
+```bash
+docker compose run --rm simulador
+```
+
+El contenedor permite entrada interactiva y se elimina al terminar. Actualmente
+`src/cli/main.js` está vacío: el comando terminará sin mostrar salida hasta que
+se implemente el simulador.
+
+Las carpetas `src` y `examples` se comparten en modo lectura desde tu computadora:
+puedes editarlas normalmente y volver a ejecutar el comando para usar los cambios,
+sin reconstruir la imagen.
+
+Para abrir una terminal dentro del entorno de Node.js:
+
+```bash
+docker compose run --rm --entrypoint sh simulador
+```
+
+Dentro de esa terminal puedes ejecutar `node src/cli/main.js`. Usa `exit` para
+salir. Si más adelante el CLI admite argumentos, puedes pasarlos después del
+archivo de entrada:
+
+```bash
+docker compose run --rm simulador src/cli/main.js --help
+```
+
+`--help` es solo un ejemplo; el CLI todavía no implementa opciones. Si cambias el
+`Dockerfile` o agregas dependencias, actualiza su instalación en el `Dockerfile`
+y vuelve a ejecutar `docker compose build`.
+
+## Uso local sin Docker
+
+### Requisitos
 
 - Node.js
 - npm
@@ -15,7 +61,7 @@ node --version
 npm --version
 ```
 
-## Instalación
+### Instalación
 
 Desde la carpeta raíz del proyecto, ejecuta:
 
@@ -26,9 +72,9 @@ npm install
 Actualmente el proyecto no tiene dependencias externas, pero este comando
 prepara el entorno a partir de `package.json`.
 
-## Ejecución
+### Ejecución
 
-Para ejecutar `src/main.js`, utiliza cualquiera de estos comandos:
+Para ejecutar `src/cli/main.js`, utiliza cualquiera de estos comandos:
 
 ```bash
 npm start
@@ -54,10 +100,9 @@ salida hasta que se implemente el programa.
 ```text
 teoria_proyecto_3/
 ├─ src/
-│  ├─ main.js   # Punto de entrada temporal
 │  ├─ core/     # Modelo y motor de simulación
 │  ├─ parser/   # Lectura y validación del YAML
-│  └─ cli/      # Argumentos, entrada/salida y cancelación
+│  └─ cli/      # Punto de entrada main.js, argumentos y entrada/salida
 ├─ examples/    # Máquinas YAML y entradas de ejemplo
 └─ docs/        # Sintaxis, manual, diagramas y análisis
 ```
