@@ -1,0 +1,15 @@
+{
+  "name": "teoria-proyecto-3",
+  "version": "1.0.0",
+  "description": "Simulador de máquina de Turing",
+  "type": "module",
+  "main": "src/cli/main.js",
+  "scripts": {
+    "start": "node src/cli/main.js"
+  },
+  "keywords": [
+    "turing-machine",
+    "simulator"
+  ],
+  "license": "ISC"
+}
