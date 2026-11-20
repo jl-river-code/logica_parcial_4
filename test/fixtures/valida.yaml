@@ -1,0 +1,9 @@
+mt:
+  estados: [q0, q1]
+  alfabeto: [a, b, X, B]
+  blank: B
+  estado_inicial: q0
+  transiciones:
+    - q0 a X q1
+    - q1 X R q0
+    - q0 b R q0
