@@ -1,48 +1,139 @@
-class Simulator {
-  constructor(machine, inputTokens) {
-    this.machine = machine;
-    this.tape = new Tape(
-      inputTokens,
-      machine.blankSymbol
-    );
+import { Machine } from "./machine.js";
+import { Tape } from "./tape.js";
+import { validateInput } from "./validate-input.js";
 
+/**
+ * Ejecuta una máquina de Turing y conserva todas sus descripciones
+ * instantáneas.
+ */
+export class Simulator {
+  constructor(machine, inputTokens) {
+    if (!(machine instanceof Machine)) {
+      throw new TypeError("El simulador debe recibir una instancia de Machine");
+    }
+
+    validateInput(inputTokens, machine.alphabet);
+
+    this.machine = machine;
+    this.tape = new Tape(inputTokens, machine.blankSymbol);
     this.currentState = machine.initialState;
     this.headPosition = 0;
+    this.stepCount = 0;
+    this.status = "ready";
+    this.haltReason = null;
     this.history = [];
+    this.cancelRequested = false;
+
+    this.recordSnapshot();
   }
 
-step() {
-  const symbol = this.tape.read(this.headPosition);
+  /**
+   * Ejecuta una transición. Devuelve true si la transición fue aplicada y
+   * false si la máquina ya no puede continuar.
+   */
+  step() {
+    if (this.status === "halted" || this.status === "cancelled") {
+      return false;
+    }
 
-  const transition = this.machine.getTransition(
-    this.currentState,
-    symbol
-  );
+    if (this.cancelRequested) {
+      this.#markAsCancelled();
+      return false;
+    }
 
-  if (!transition) {
-    return false;
-  }
+    this.status = "running";
 
-  if (transition.action === "R") {
-    this.headPosition++;
-  } else if (transition.action === "L") {
-    this.headPosition--;
-  } else {
-    this.tape.write(
-      this.headPosition,
-      transition.action
+    const symbol = this.tape.read(this.headPosition);
+    const transition = this.machine.getTransition(
+      this.currentState,
+      symbol
     );
+
+    if (transition === null) {
+      this.status = "halted";
+      this.haltReason = "no-transition";
+      return false;
+    }
+
+    if (transition.action === "R") {
+      this.headPosition += 1;
+    } else if (transition.action === "L") {
+      this.headPosition -= 1;
+    } else {
+      this.tape.write(this.headPosition, transition.action);
+    }
+
+    this.currentState = transition.nextState;
+    this.stepCount += 1;
+    this.recordSnapshot();
+
+    return true;
   }
 
-  this.currentState = transition.nextState;
-  this.recordSnapshot();
+  /**
+   * Ejecuta la máquina hasta que no exista una transición o se solicite la
+   * cancelación.
+   *
+   * AbortSignal permite conectar posteriormente la cancelación de la CLI.
+   * yieldEvery indica cada cuántos pasos se cede el control al event loop.
+   */
+  async run({ signal, yieldEvery = 1000 } = {}) {
+    if (!Number.isInteger(yieldEvery) || yieldEvery <= 0) {
+      throw new TypeError("yieldEvery debe ser un número entero positivo");
+    }
 
-  return true;
-}
+    while (this.status !== "halted" && this.status !== "cancelled") {
+      if (this.cancelRequested || signal?.aborted) {
+        this.#markAsCancelled();
+        break;
+      }
 
-  run() {}
+      if (!this.step()) {
+        break;
+      }
 
-  createSnapshot() {}
+      if (this.stepCount % yieldEvery === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    }
 
-  getResult() {}
+    return this.getResult();
+  }
+
+  /**
+   * Solicita que run() se detenga antes de ejecutar la siguiente transición.
+   */
+  cancel() {
+    this.cancelRequested = true;
+  }
+
+  createSnapshot() {
+    return {
+      step: this.stepCount,
+      state: this.currentState,
+      headPosition: this.headPosition,
+      tape: this.tape.snapshot()
+    };
+  }
+
+  recordSnapshot() {
+    this.history.push(this.createSnapshot());
+  }
+
+  getResult() {
+    return {
+      status: this.status,
+      haltReason: this.haltReason,
+      steps: this.stepCount,
+      finalState: this.currentState,
+      headPosition: this.headPosition,
+      output: this.tape.getContent(),
+      history: [...this.history]
+    };
+  }
+
+  #markAsCancelled() {
+    this.status = "cancelled";
+    this.haltReason = "user-cancelled";
+  }
 }
