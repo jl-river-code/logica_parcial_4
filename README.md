@@ -69,8 +69,14 @@ Desde la carpeta raíz del proyecto, ejecuta:
 npm install
 ```
 
-Actualmente el proyecto no tiene dependencias externas, pero este comando
-prepara el entorno a partir de `package.json`.
+Instala la única dependencia, `js-yaml`, que se usa para leer las
+especificaciones.
+
+### Pruebas
+
+```bash
+npm test
+```
 
 ### Ejecución
 
@@ -107,12 +113,49 @@ teoria_proyecto_3/
 └─ docs/        # Sintaxis, manual, diagramas y análisis
 ```
 
+## Formato de la máquina (YAML)
+
+```yaml
+mt:
+  estados: [q0, q1]
+  alfabeto: [a, b, X, B]
+  blank: B               # opcional; por defecto "#"
+  estado_inicial: q0
+  transiciones:          # cuádruplas: estado símbolo acción destino
+    - q0 a X q1          # acción = símbolo a escribir, L o R
+    - q1 X R q0
+```
+
+- Todos los valores se leen como texto (`0`, `yes`, `null` son símbolos).
+- `#` inicia comentarios en YAML: si es un símbolo, escríbelo entre comillas
+  (`'#'`).
+- Si el blank no aparece en `alfabeto`, se agrega automáticamente.
+
+## Uso del parser desde la CLI
+
+```js
+import { loadMachineFile, tokenizeInput, SpecError } from "../parser/parser.js";
+import { Simulator } from "../core/simulator.js";
+
+try {
+  const { machine, warnings } = await loadMachineFile("examples/machine.yaml");
+  const simulator = new Simulator(machine, tokenizeInput("aab", machine.alphabet));
+  const result = await simulator.run();
+} catch (error) {
+  if (error instanceof SpecError) {
+    console.error(error.message); // lista todos los errores con su línea
+  }
+}
+```
+
+`warnings` y `error.errors` son arreglos de `{ message, line }`.
+
 ## Supuestos iniciales
 
 - Los símbolos de entrada y los símbolos de la cinta pertenecen al mismo
   alfabeto.
-- El símbolo blanco se obtiene de la especificación YAML.
-- Si no se especifica un símbolo blanco, se utiliza `#`.
+- El símbolo blank se obtiene (clave `blank`) de la especificación YAML.
+- Si no se especifica un símbolo blank, se utiliza `#`.
 - Las posiciones de la cinta que no tienen un símbolo escrito se consideran
   blancas.
 - se utiliza R & L como simbolos reservados al movimiento del cabezal. 
