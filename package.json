@@ -5,11 +5,15 @@
   "type": "module",
   "main": "src/cli/main.js",
   "scripts": {
-    "start": "node src/cli/main.js"
+    "start": "node src/cli/main.js",
+    "test": "node --test"
   },
   "keywords": [
     "turing-machine",
     "simulator"
   ],
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "js-yaml": "4.3.2"
+  }
 }
