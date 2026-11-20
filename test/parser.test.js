@@ -114,7 +114,7 @@ test("'#' sin comillas da una pista", () => {
 test("estructura: raíz y claves obligatorias", () => {
   assert.match(specErrorOf(() => parseMachineSpec("")).message, /mapa/);
   assert.match(specErrorOf(() => parseMachineSpec("- a")).message, /mapa/);
-  assert.match(specErrorOf(() => parseMachineSpec("maquina: {}")).message, /Falta la clave raíz "mt"/);
+  assert.match(specErrorOf(() => parseMachineSpec("maquina: {}")).message, /Falta la clave raiz "mt"/);
   assert.match(specErrorOf(() => parseMachineSpec("mt: hola")).message, /debe ser un mapa/);
 
   const error = specErrorOf(() => parseMachineSpec("mt:\n  estados: [q0]\n"));
@@ -135,7 +135,7 @@ mt:
   const text = messages(error);
   assert.match(text, /"estados" debe ser una lista/);
   assert.match(text, /"alfabeto" no puede estar vacío/);
-  assert.match(text, /"estado_inicial": debe ser un texto no vacío, se encontró una lista/);
+  assert.match(text, /"estado_inicial": debe ser un texto no vacio, se encontro una lista/);
   assert.match(text, /"transiciones" debe ser una lista/);
 });
 
@@ -149,12 +149,12 @@ mt:
   transiciones: []
 `));
   const text = messages(error);
-  assert.match(text, /El estado 2 de "estados": "q0" está repetido/);
+  assert.match(text, /El estado 2 de "estados": "q0" esta repetido/);
   assert.match(text, /"q 1" no puede contener espacios/);
-  assert.match(text, /"R" está reservado/);
-  assert.match(text, /"L" está reservado/);
-  assert.match(text, /El símbolo 4 de "alfabeto": "a" está repetido/);
-  assert.match(text, /"blank": "R" está reservado/);
+  assert.match(text, /"R" esta reservado/);
+  assert.match(text, /"L" esta reservado/);
+  assert.match(text, /El símbolo 4 de "alfabeto": "a" esta repetido/);
+  assert.match(text, /"blank": "R" esta reservado/);
 });
 
 test("contenido: estado inicial no declarado", () => {
@@ -166,7 +166,7 @@ mt:
   transiciones: []
 `));
   assert.deepEqual(error.errors, [
-    { message: 'El estado inicial "q9" no está en "estados"', line: 5 }
+    { message: 'El estado inicial "q9" no esta en "estados"', line: 5 }
   ]);
 });
 
@@ -191,7 +191,7 @@ mt:
   assert.match(byLine[8], /símbolo "c" no está en "alfabeto"/);
   assert.match(byLine[9], /acción "Z"/);
   assert.match(byLine[12], /ya existe una transición para \(q0, b\).*línea 11/);
-  assert.match(byLine[13], /estado símbolo acción destino/);
+  assert.match(byLine[13], /estado simbolo accion destino/);
 
   const line10 = error.errors.filter((e) => e.line === 10).map((e) => e.message);
   assert.equal(line10.length, 2);
