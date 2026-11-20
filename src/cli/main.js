@@ -3,6 +3,7 @@ import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
 import { loadMachineFile, tokenizeInput } from "../parser/parser.js";
 import { Simulator } from "../core/simulator.js";
+import { measureFile } from "./measure.js";
 
 const HELP = `Simulador de máquinas de Turing
 
@@ -14,6 +15,8 @@ Opciones:
   --entrada TEXTO   Cadena de entrada ("" para cinta vacía)
   --pasos           Mostrar la traza completa de la ejecución
   --limite N        Máximo total de transiciones (por defecto: 10000)
+  --medir ARCHIVO   Medir un arreglo JSON de cadenas de entrada
+  --csv ARCHIVO     Guardar las mediciones en CSV (requiere --medir)
   --help, -h        Mostrar esta ayuda
 
 En el menú puedes avanzar paso a paso, ejecutar hasta el final o cancelar.
@@ -133,10 +136,10 @@ async function interactive(limit) {
   });
   try {
     while (true) {
-      console.log("\n=== SIMULADOR DE MÁQUINAS DE TURING ===\n1. Cargar máquina YAML\n0. Salir");
+      console.log("\n=== SIMULADOR DE MÁQUINAS DE TURING ===\n1. Cargar máquina YAML\n2. Medir crecimiento\n0. Salir");
       const option = (await ask("Opción: ")).trim();
       if (option === "0") break;
-      if (option !== "1") {
+      if (option !== "1" && option !== "2") {
         console.log("Opción inválida.");
         continue;
       }
@@ -147,6 +150,11 @@ async function interactive(limit) {
         const index = /^\d+$/.test(selection) ? Number(selection) - 1 : -1;
         const path = examples[index] ? `examples/${examples[index]}` : selection;
         const machine = await load(path);
+        if (option === "2") {
+          const samplesPath = (await ask("Ruta del JSON con las cadenas de prueba: ")).trim();
+          await measureFile(machine, samplesPath, { maxSteps: limit });
+          continue;
+        }
         const input = await ask("Cadena de entrada (Enter para cinta vacía): ");
         let mode;
         do {
@@ -171,6 +179,8 @@ async function main() {
       entrada: { type: "string" },
       pasos: { type: "boolean", default: false },
       limite: { type: "string", default: "10000" },
+      medir: { type: "string" },
+      csv: { type: "string" },
       help: { type: "boolean", short: "h" }
     },
     allowPositionals: true
@@ -179,9 +189,18 @@ async function main() {
   const limit = Number(values.limite);
   if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error("--limite debe ser un entero positivo");
   if (positionals.length > 1) throw new Error("Indica un único archivo YAML; usa --entrada para la cadena");
+  if (values.csv && !values.medir) throw new Error("--csv requiere --medir");
   if (positionals.length === 0) {
-    if (values.entrada !== undefined || values.pasos) throw new Error("Falta la ruta del archivo YAML");
+    if (values.entrada !== undefined || values.pasos || values.medir) throw new Error("Falta la ruta del archivo YAML");
     return interactive(limit);
+  }
+  if (values.medir) {
+    if (values.entrada !== undefined || values.pasos) throw new Error("Usa --medir sin --entrada ni --pasos");
+    const machine = await load(positionals[0]);
+    const rows = await measureFile(machine, values.medir, { maxSteps: limit, csvPath: values.csv });
+    if (rows.some((row) => row.status === "cancelled")) process.exitCode = 130;
+    else if (rows.some((row) => row.status === "limited")) process.exitCode = 2;
+    return;
   }
   if (values.entrada === undefined) throw new Error('Falta --entrada; usa --entrada "" para una cinta vacía');
   const machine = await load(positionals[0]);

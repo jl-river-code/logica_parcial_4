@@ -5,7 +5,7 @@ import { Simulator } from "../src/core/simulator.js";
 import { Machine } from "../src/core/machine.js";
 import { fileURLToPath } from "node:url";
 
-const example = fileURLToPath(new URL("../examples/machine2.yaml", import.meta.url));
+const example = fileURLToPath(new URL("../examples/suma-unaria.yaml", import.meta.url));
 
 test("suma unaria: ambos operandos de cero a seis unidades", async () => {
   const { machine, warnings } = await loadMachineFile(example);

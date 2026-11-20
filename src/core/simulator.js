@@ -7,7 +7,7 @@ import { validateInput } from "./validate-input.js";
  * instantáneas.
  */
 export class Simulator {
-  constructor(machine, inputTokens) {
+  constructor(machine, inputTokens, { keepHistory = true } = {}) {
     if (!(machine instanceof Machine)) {
       throw new TypeError("El simulador debe recibir una instancia de Machine");
     }
@@ -22,6 +22,7 @@ export class Simulator {
     this.status = "ready";
     this.haltReason = null;
     this.history = [];
+    this.keepHistory = keepHistory;
     this.cancelRequested = false;
 
     this.recordSnapshot();
@@ -129,7 +130,7 @@ export class Simulator {
   }
 
   recordSnapshot() {
-    this.history.push(this.createSnapshot());
+    if (this.keepHistory) this.history.push(this.createSnapshot());
   }
 
   getResult() {

@@ -28,3 +28,14 @@ El historial conserva una copia por transición y su memoria crece con el númer
 de pasos y de celdas ocupadas. El límite acota los pasos, pero no constituye una
 cuota fija de memoria. La vista de terminal muestra una ventana alrededor del
 cabezal; el resultado contiene toda la región entre celdas no blancas extremas.
+
+El modo de medición (`src/cli/measure.js`) recibe un arreglo JSON de cadenas,
+tokeniza cada una y crea un simulador independiente. Usa `keepHistory: false`
+para no copiar la cinta en cada transición. Conserva el mismo contador de pasos,
+salida, cancelación y límite del motor. No mide tiempos de pared ni clasifica
+automáticamente la complejidad. Muestra cocientes y permite exportar CSV; los
+resultados truncados o cancelados no se usan para calcular cocientes completos.
+
+La interfaz llama a módulos JavaScript locales: `loadMachineFile`,
+`tokenizeInput`, `Simulator.step()` y `Simulator.run()`. Son la API interna del
+proyecto; no hay servidor ni endpoints HTTP en esta integración.
