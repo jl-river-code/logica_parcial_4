@@ -1,5 +1,6 @@
 .git
 node_modules
+.npm-cache
 npm-debug.log*
 docs
 README.md

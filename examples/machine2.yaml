@@ -1,0 +1,26 @@
+# Suma de dos números unarios separados por +.
+# Entrada: 111+11 -> salida: 11111. También admite +, 111+ y +11.
+# Dominio: 1*+1*. Cada 1 representa una unidad; la cadena vacía representa 0.
+# Primero recorre ambos operandos, vuelve al inicio, reemplaza + por 1
+# y borra el último 1 para compensar la unidad agregada.
+# q_fin indica finalización correcta; otra parada indica entrada fuera del dominio.
+mt:
+  estados: [q_inicio, q_derecha, q_volver, q_buscar, q_escribir, q_avanzar, q_ultimo, q_borrar, q_fin]
+  alfabeto: ['1', '+', '#']
+  blank: '#'
+  estado_inicial: q_inicio
+  transiciones:
+    - q_inicio 1 R q_inicio
+    - q_inicio + R q_derecha
+    - q_derecha 1 R q_derecha
+    - "q_derecha # L q_volver"
+    - q_volver 1 L q_volver
+    - q_volver + L q_volver
+    - "q_volver # R q_buscar"
+    - q_buscar 1 R q_buscar
+    - q_buscar + 1 q_escribir
+    - q_escribir 1 R q_avanzar
+    - q_avanzar 1 R q_avanzar
+    - "q_avanzar # L q_ultimo"
+    - "q_ultimo 1 # q_borrar"
+    - "q_borrar # # q_fin"

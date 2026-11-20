@@ -1,0 +1,6 @@
+mt:
+  estados: [q0]
+  alfabeto: [0, 1]
+  transiciones:
+    - q0 a R q0
+    - q0 a L q0

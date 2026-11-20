@@ -1,161 +1,152 @@
-# Simulador de máquina de Turing
+# Simulador de máquinas de Turing
 
-Proyecto en JavaScript para cargar la especificación de una máquina de Turing,
-validar una cadena de entrada y simular su ejecución paso a paso.
+Carga especificaciones YAML, valida entradas y ejecuta máquinas deterministas
+con una cinta infinita en ambas direcciones. Incluye una interfaz de terminal en
+español, ejecución automática, modo paso a paso e historial de configuraciones.
 
-## Uso con Docker (recomendado)
+## Iniciar con Docker
 
-Solo necesitas Docker con Docker Compose. En Windows puedes utilizar Docker
-Desktop, iniciado y configurado para contenedores Linux. No necesitas instalar
-Node.js ni npm en tu computadora.
-
-Desde la carpeta raíz del proyecto, construye la imagen la primera vez:
+Necesitas Docker con Compose. En Windows, inicia Docker Desktop con contenedores
+Linux. Desde la raíz del proyecto:
 
 ```bash
 docker compose build
-```
-
-Ejecuta el simulador con:
-
-```bash
 docker compose run --rm simulador
 ```
 
-El contenedor permite entrada interactiva y se elimina al terminar. Actualmente
-`src/cli/main.js` está vacío: el comando terminará sin mostrar salida hasta que
-se implemente el simulador.
+Las carpetas `src` y `examples` se comparten en modo lectura: edítalas desde tu
+computadora y vuelve a ejecutar, sin reconstruir. Si cambian las dependencias o
+el Dockerfile, vuelve a construir la imagen.
 
-Las carpetas `src` y `examples` se comparten en modo lectura desde tu computadora:
-puedes editarlas normalmente y volver a ejecutar el comando para usar los cambios,
-sin reconstruir la imagen.
+Ejecución directa del segundo ejemplo:
 
-Para abrir una terminal dentro del entorno de Node.js:
+```bash
+docker compose run --rm simulador src/cli/main.js examples/machine2.yaml --entrada "111+11"
+```
+
+Para abrir una terminal en el contenedor:
 
 ```bash
 docker compose run --rm --entrypoint sh simulador
 ```
 
-Dentro de esa terminal puedes ejecutar `node src/cli/main.js`. Usa `exit` para
-salir. Si más adelante el CLI admite argumentos, puedes pasarlos después del
-archivo de entrada:
+## Iniciar con Node.js
+
+Usa Node.js 24 y npm:
 
 ```bash
-docker compose run --rm simulador src/cli/main.js --help
-```
-
-`--help` es solo un ejemplo; el CLI todavía no implementa opciones. Si cambias el
-`Dockerfile` o agregas dependencias, actualiza su instalación en el `Dockerfile`
-y vuelve a ejecutar `docker compose build`.
-
-## Uso local sin Docker
-
-### Requisitos
-
-- Node.js
-- npm
-
-Puedes verificar que estén instalados con:
-
-```bash
-node --version
-npm --version
-```
-
-### Instalación
-
-Desde la carpeta raíz del proyecto, ejecuta:
-
-```bash
-npm install
-```
-
-Instala la única dependencia, `js-yaml`, que se usa para leer las
-especificaciones.
-
-### Pruebas
-
-```bash
-npm test
-```
-
-### Ejecución
-
-Para ejecutar `src/cli/main.js`, utiliza cualquiera de estos comandos:
-
-```bash
+npm ci
 npm start
 ```
 
-o, de forma equivalente:
+El menú permite seleccionar un YAML de `examples` por número o escribir otra ruta,
+introducir una cadena (Enter representa cinta vacía) y elegir modo automático o
+paso a paso. En este último, Enter aplica una transición, `a` ejecuta el resto y
+`c` cancela. Al finalizar puedes cargar otra máquina. `Ctrl+C` cancela la
+simulación activa; en el menú cierra el programa.
+
+La vista muestra el estado, el número de transiciones, la posición del cabezal y
+una ventana de 17 celdas centrada en él. Los corchetes marcan la celda actual.
+Al terminar muestra la salida completa entre la primera y la última celda no
+blanca; los blancos internos se conservan.
+
+También se puede ejecutar sin menú:
 
 ```bash
-npm run start
+npm start -- examples/machine2.yaml --entrada "111+11"
+npm start -- examples/machine2.yaml --entrada "11+1" --pasos
+npm start -- examples/machine2.yaml --entrada "+" --limite 1000
+npm start -- --help
 ```
 
-También se puede ejecutar directamente con Node.js:
+`--pasos` imprime el historial al terminar. El modo paso a paso interactivo se
+elige desde el menú. El límite predeterminado es de 10000 transiciones por
+simulación para acotar máquinas que no terminan y el historial en memoria.
+Al alcanzar el límite no se afirma que la máquina haya terminado.
 
-```bash
-node src/cli/main.js
-```
+En ejecución directa, los códigos de salida son: `0` si se detiene naturalmente,
+`1` si hay errores de uso, archivo o entrada, `2` si alcanza el límite y `130`
+si se cancela. El código `0` no significa aceptación: el formato actual no
+declara estados de aceptación o rechazo, y el motor se detiene al no encontrar
+una transición. Interpreta el estado final según la definición de cada ejemplo.
 
-Por ahora, `main.js` está vacío, así que el comando finalizará sin mostrar
-salida hasta que se implemente el programa.
+## Ejemplos
 
-## Estructura prevista
+- `examples/machine1.yaml`: borrador previo, todavía inválido. Falta
+  `estado_inicial`, usa `a` sin declararlo y repite el par `(q0, a)` con dos
+  acciones distintas. Queda pendiente definir qué operación debe realizar.
+- `examples/machine2.yaml`: **suma unaria**, distinta de la suma binaria.
+  Recibe `1*+1*`: cada `1` vale una unidad. `111+11` produce `11111`, `+11`
+  produce `11`, `111+` produce `111` y `+` produce una cinta vacía (cero).
+  La finalización correcta llega a `q_fin`. Una entrada sin exactamente un
+  separador, o con blancos internos, queda fuera del dominio; si se detiene en
+  otro estado, no completó la operación. Símbolos ajenos al alfabeto se rechazan
+  antes de simular. No corresponde a ninguna de las operaciones excluidas
+  indicadas para este proyecto.
 
-```text
-teoria_proyecto_3/
-├─ src/
-│  ├─ core/     # Modelo y motor de simulación
-│  ├─ parser/   # Lectura y validación del YAML
-│  └─ cli/      # Punto de entrada main.js, argumentos y entrada/salida
-├─ examples/    # Máquinas YAML y entradas de ejemplo
-└─ docs/        # Sintaxis, manual, diagramas y análisis
-```
+El ejemplo 2 primero recorre los operandos, regresa al inicio, sustituye el
+separador por una unidad y borra la última unidad para conservar la suma.
+Su tiempo y espacio son O(n + m), sin contar las copias del historial que
+conserva el simulador.
 
-## Formato de la máquina (YAML)
+## Formato YAML
 
 ```yaml
 mt:
   estados: [q0, q1]
   alfabeto: [a, b, X, B]
-  blank: B               # opcional; por defecto "#"
+  blank: B
   estado_inicial: q0
-  transiciones:          # cuádruplas: estado símbolo acción destino
-    - q0 a X q1          # acción = símbolo a escribir, L o R
+  transiciones:
+    - q0 a X q1
     - q1 X R q0
+    - q0 b R q0
 ```
 
-- Todos los valores se leen como texto (`0`, `yes`, `null` son símbolos).
-- `#` inicia comentarios en YAML: si es un símbolo, escríbelo entre comillas
-  (`'#'`).
-- Si el blank no aparece en `alfabeto`, se agrega automáticamente.
+Cada transición es una cuádrupla `estado símbolo acción destino`. Una acción
+escribe un símbolo **o** mueve el cabezal (`L` o `R`); escribir no mueve el
+cabezal. Para escribir y avanzar se necesitan dos transiciones.
 
-## Uso del parser desde la CLI
+- Las claves obligatorias son `estados`, `alfabeto`, `estado_inicial` y
+  `transiciones`, dentro de `mt`.
+- `blank` es opcional y por defecto vale `#`. Si no pertenece al alfabeto se
+  agrega con una advertencia.
+- Los valores se leen como texto, incluso `0`, `yes` y `null`.
+- En YAML `#` inicia un comentario. Usa `blank: '#'` y comillas para una
+  transición que lo contenga: `"q0 # R q1"`.
+- `L` y `R` están reservados para movimientos.
+- No puede haber dos transiciones para el mismo par `(estado, símbolo)`.
+- La entrada se reconoce usando primero los símbolos más largos del alfabeto;
+  si contiene espacios, estos separan tokens explícitos.
+- Se usa el mismo alfabeto para la entrada y la cinta. Las restricciones
+  adicionales de cada operación se expresan mediante sus transiciones.
 
-```js
-import { loadMachineFile, tokenizeInput, SpecError } from "../parser/parser.js";
-import { Simulator } from "../core/simulator.js";
+## Pruebas
 
-try {
-  const { machine, warnings } = await loadMachineFile("examples/machine.yaml");
-  const simulator = new Simulator(machine, tokenizeInput("aab", machine.alphabet));
-  const result = await simulator.run();
-} catch (error) {
-  if (error instanceof SpecError) {
-    console.error(error.message); // lista todos los errores con su línea
-  }
-}
+```bash
+npm test
 ```
 
-`warnings` y `error.errors` son arreglos de `{ message, line }`.
+Cubren el parser, casos válidos e inválidos del segundo ejemplo, límites,
+cancelación y uso de la CLI tanto con argumentos como con entradas al menú.
 
-## Supuestos iniciales
+## Estructura
 
-- Los símbolos de entrada y los símbolos de la cinta pertenecen al mismo
-  alfabeto.
-- El símbolo blank se obtiene (clave `blank`) de la especificación YAML.
-- Si no se especifica un símbolo blank, se utiliza `#`.
-- Las posiciones de la cinta que no tienen un símbolo escrito se consideran
-  blancas.
-- se utiliza R & L como simbolos reservados al movimiento del cabezal. 
+```text
+src/
+  cli/main.js          Menú, argumentos y visualización de la cinta
+  core/                Máquina, cinta, validación de entrada y simulador
+  parser/              Carga YAML y validaciones de la especificación
+examples/              Especificaciones de máquinas
+test/                  Pruebas automáticas y fixtures
+docs/                  Documentación de arquitectura
+```
+
+## Pendientes
+
+- Completar el ejemplo 1 cuando se defina su operación.
+- Confirmar con el enunciado si se requieren estados explícitos de aceptación
+  y rechazo; el formato actual no los contempla.
+- Completar los diagramas y el análisis que exija la entrega. No se ha incluido
+  el enunciado completo en este repositorio, por lo que esta lista se limita a
+  lo verificable en el código y a los requisitos indicados en la conversación.

@@ -42,6 +42,7 @@ export class Simulator {
     }
 
     this.status = "running";
+    this.haltReason = null;
 
     const symbol = this.tape.read(this.headPosition);
     const transition = this.machine.getTransition(
@@ -77,14 +78,25 @@ export class Simulator {
    * AbortSignal permite conectar posteriormente la cancelación de la CLI.
    * yieldEvery indica cada cuántos pasos se cede el control al event loop.
    */
-  async run({ signal, yieldEvery = 1000 } = {}) {
+  async run({ signal, yieldEvery = 1000, maxSteps = Infinity } = {}) {
     if (!Number.isInteger(yieldEvery) || yieldEvery <= 0) {
       throw new TypeError("yieldEvery debe ser un número entero positivo");
+    }
+    if (maxSteps !== Infinity && (!Number.isSafeInteger(maxSteps) || maxSteps <= 0)) {
+      throw new TypeError("maxSteps debe ser un número entero positivo");
     }
 
     while (this.status !== "halted" && this.status !== "cancelled") {
       if (this.cancelRequested || signal?.aborted) {
         this.#markAsCancelled();
+        break;
+      }
+
+      if (this.stepCount >= maxSteps && this.machine.getTransition(
+        this.currentState, this.tape.read(this.headPosition)
+      ) !== null) {
+        this.status = "limited";
+        this.haltReason = "step-limit";
         break;
       }
 
