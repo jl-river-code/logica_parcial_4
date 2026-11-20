@@ -1,0 +1,47 @@
+# lenguaje { a^n b^n | n >= 0 }.
+#
+# en cada pasada marca la primera "a" sin marcar con X y la primera "b" sin
+# marcar con Y. Cuando ya no quedan "a", revisa que sólo queden Y.
+#
+# resultado:
+#   - acepta si se detiene en q6
+#   - rechaza si se detiene en cualquier otro estado (no hay transición)
+#
+# prueba:
+#   ""        → acepta
+#   ab        → acepta   (cinta final: XY)
+#   aabb      → acepta   (cinta final: XXYY)
+#   aaabbb    → acepta
+#   aab       → rechaza  (sobra una a)
+#   abb       → rechaza  (sobra una b)
+#   ba        → rechaza  (orden incorrecto)
+mt:
+  estados: [q0, q1, q2, q3, q4, q5, q6]
+  alfabeto: [a, b, B, X, Y]
+  blank: B
+  estado_inicial: q0
+  transiciones:
+    # q0: inicio de cada pasada, sobre la primera "a" sin marcar
+    - q0 a X q1
+    - q0 Y R q4
+    - q0 B B q6
+
+    # q1: acaba de escribir X, avanza
+    - q1 X R q2
+
+    # q2: busca a la derecha la primera "b" sin marcar
+    - q2 a R q2
+    - q2 Y R q2
+    - q2 b Y q3
+
+    # q3: acaba de escribir Y, retrocede
+    - q3 Y L q5
+
+    # q5: regresa a la izquierda hasta la última X
+    - q5 Y L q5
+    - q5 a L q5
+    - q5 X R q0
+
+    # q4: ya no hay "a"; verifica que sólo queden Y
+    - q4 Y R q4
+    - q4 B B q6
